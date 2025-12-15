@@ -1,1 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant IA - n8n</title>
+    <style>
+        /* STYLE (Design de la page) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
 
+        .chat-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: none;
+            font-size: 16px;
+            box-sizing: border-box; /* Important pour les marges */
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #ff6b6b; /* Couleur de bouton (tu peux changer) */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #e55a5a;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #zoneReponse {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #eef2f5;
+            border-radius: 6px;
+            text-align: left;
+            min-height: 60px;
+            white-space: pre-wrap; /* Garde les sauts de ligne de l'IA */
+            color: #444;
+            border-left: 4px solid #ff6b6b;
+            display: none; /* Caché par défaut */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <h2>🤖 Posez votre question</h2>
+        
+        <textarea id="champQuestion" placeholder="Ex: Peux-tu m'écrire un poème sur l'IA ?"></textarea>
+        
+        <button id="btnEnvoyer" onclick="envoyerQuestion()">Envoyer à l'IA</button>
+
+        <div id="zoneReponse"></div>
+    </div>
+
+    <script>
+        async function envoyerQuestion() {
+            // 1. On récupère les éléments de la page
+            const input = document.getElementById('champQuestion');
+            const output = document.getElementById('zoneReponse');
+            const btn = document.getElementById('btnEnvoyer');
+            const questionText = input.value;
+
+            // 2. Vérification : Si c'est vide, on arrête
+            if (!questionText.trim()) {
+                alert("Merci d'écrire une question !");
+                return;
+            }
+
+            // 3. État de chargement (on grise le bouton)
+            btn.disabled = true;
+            btn.innerText = "Réflexion en cours...";
+            output.style.display = "block";
+            output.innerText = "⏳ L'IA est en train d'écrire...";
+
+            try {
+                // 4. Envoi de la donnée à n8n (Ton URL de Production)
+                const response = await fetch('https://x-ai.app.n8n.cloud/webhook/question', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        "question": questionText 
+                    })
+                });
+
+                // 5. Réception de la réponse
+                if (response.ok) {
+                    const data = await response.text(); // Ou response.json() selon ton dernier nœud n8n
+                    
+                    // Si le résultat est un objet JSON (ex: {"text": "..."}), il faudra peut-être adapter ici.
+                    // Pour l'instant, on affiche le texte brut reçu.
+                    output.innerText = data;
+                } else {
+                    output.innerText = "Erreur : Le serveur n8n a renvoyé un problème.";
+                }
+
+            } catch (error) {
+                console.error("Erreur Fetch:", error);
+                output.innerText = "Erreur de connexion. Vérifiez que le workflow est bien ACTIF (Publish).";
+            } finally {
+                // 6. On remet le bouton normal
+                btn.disabled = false;
+                btn.innerText = "Envoyer à l'IA";
+            }
+        }
+    </script>
+
+</body>
+</html>
