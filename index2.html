@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Assistant IA</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f9; margin: 0; }
+        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; }
+        #reponse { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; text-align: left; min-height: 50px; white-space: pre-wrap; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <h2>🤖 Posez votre question</h2>
+        <textarea id="msg" placeholder="Ex: Raconte-moi une histoire..."></textarea>
+        <button id="btn" onclick="envoyer()">Envoyer</button>
+        <div id="reponse"></div>
+    </div>
+
+    <script>
+        async function envoyer() {
+            const msgInput = document.getElementById('msg');
+            const output = document.getElementById('reponse');
+            const btn = document.getElementById('btn');
+            const texte = msgInput.value;
+
+            if (!texte.trim()) return;
+
+            // On montre que ça charge
+            btn.disabled = true;
+            btn.innerText = "Attente...";
+            output.style.display = "block";
+            output.innerText = "⏳ L'IA réfléchit...";
+
+            try {
+                // Envoi à n8n (URL de Production)
+                const response = await fetch('https://x-ai.app.n8n.cloud/webhook/question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        "chatInput": texte   // <--- C'EST LA CORRECTION IMPORTANTE
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.text();
+                    // On essaie de lire proprement la réponse
+                    try {
+                        const json = JSON.parse(data);
+                        // Affiche le texte de l'IA (selon le format renvoyé par n8n)
+                        output.innerText = json.output || json.text || json.message || JSON.stringify(json);
+                    } catch (e) {
+                        // Si ce n'est pas du JSON, on affiche le texte brut
+                        output.innerText = data;
+                    }
+                } else {
+                    output.innerText = "Erreur (Code " + response.status + ")";
+                }
+
+            } catch (error) {
+                console.error(error);
+                output.innerText = "Erreur de connexion.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Envoyer";
+            }
+        }
+    </script>
+
+</body>
+</html>
