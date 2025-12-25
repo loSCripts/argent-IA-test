@@ -3,75 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Assistant IA</title>
+    <title>IA Système Simple</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f4f4f9; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
-        textarea { width: 100%; height: 100px; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        button:disabled { background-color: #ccc; }
-        #reponse { margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 5px; text-align: left; min-height: 50px; white-space: pre-wrap; display: none; }
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; background: #f4f7f6; }
+        .chat-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        textarea { width: 100%; height: 100px; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: none; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #response { margin-top: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #007bff; min-height: 50px; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-    <div class="box">
-        <h2>🤖 Posez votre question</h2>
-        <textarea id="msg" placeholder="Ex: Raconte-moi une histoire..."></textarea>
-        <button id="btn" onclick="envoyer()">Envoyer</button>
-        <div id="reponse"></div>
-    </div>
+<div class="chat-container">
+    <h2>🤖 IA Système Simple</h2>
+    <textarea id="userInput" placeholder="Posez votre question ici..."></textarea>
+    <button id="sendBtn">Envoyer à l'IA</button>
+    <div id="response">La réponse s'affichera ici...</div>
+</div>
 
-    <script>
-        async function envoyer() {
-            const msgInput = document.getElementById('msg');
-            const output = document.getElementById('reponse');
-            const btn = document.getElementById('btn');
-            const texte = msgInput.value;
+<script>
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+        const input = document.getElementById('userInput');
+        const responseDiv = document.getElementById('response');
+        const btn = document.getElementById('sendBtn');
 
-            if (!texte.trim()) return;
+        if (!input.value.trim()) return;
 
-            // On montre que ça charge
-            btn.disabled = true;
-            btn.innerText = "Attente...";
-            output.style.display = "block";
-            output.innerText = "⏳ L'IA réfléchit...";
+        btn.disabled = true;
+        responseDiv.innerText = "Réflexion en cours...";
 
-            try {
-                // Envoi à n8n (URL de Production)
-                const response = await fetch('https://x-ai.app.n8n.cloud/webhook/question', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        "chatInput": texte   // <--- C'EST LA CORRECTION IMPORTANTE
-                    })
-                });
+        try {
+            // APPEL AU BOUCLIER (On utilise /chat-simple)
+            const response = await fetch('https://proxy-ia-universel.vercel.app/chat-simple', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chatInput: input.value })
+            });
 
-                if (response.ok) {
-                    const data = await response.text();
-                    // On essaie de lire proprement la réponse
-                    try {
-                        const json = JSON.parse(data);
-                        // Affiche le texte de l'IA (selon le format renvoyé par n8n)
-                        output.innerText = json.output || json.text || json.message || JSON.stringify(json);
-                    } catch (e) {
-                        // Si ce n'est pas du JSON, on affiche le texte brut
-                        output.innerText = data;
-                    }
-                } else {
-                    output.innerText = "Erreur (Code " + response.status + ")";
-                }
-
-            } catch (error) {
-                console.error(error);
-                output.innerText = "Erreur de connexion.";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Envoyer";
-            }
+            const data = await response.json();
+            // Affiche soit l'output de n8n, soit un message d'erreur
+            responseDiv.innerText = data.output || data.text || "Erreur : Réponse vide";
+        } catch (error) {
+            responseDiv.innerText = "Erreur de connexion au bouclier.";
+        } finally {
+            btn.disabled = false;
         }
-    </script>
+    });
+</script>
 
 </body>
 </html>
